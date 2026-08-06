@@ -364,7 +364,7 @@
       <input type="range" id="nodesRange" min="3" max="12" value="6" step="1" />
     </div>
     <div class="ctrl">
-      <label>Racks</label>
+      <label>Zones/Racks</label>
       <select id="racksSelect" class="form-input form-input--compact"></select>
     </div>
     <div class="ctrl">
@@ -584,7 +584,7 @@
     divisors.forEach((d) => {
       const el = document.createElement("option");
       el.value = d;
-      el.textContent = `${d} rack${d === 1 ? "" : "s"} (${state.numNodes / d}/rack)`;
+      el.textContent = `${d} zone${d === 1 ? "" : "s"}/rack${d === 1 ? "" : "s"} (${state.numNodes / d}/zone/rack)`;
       racksSelect.appendChild(el);
     });
     if (divisors.includes(prev)) {
@@ -665,9 +665,9 @@
       const g = document.createElementNS(svgNS, "g");
       g.style.cursor = "pointer";
       g.innerHTML = `
-        <title>Rack ${r} — click to kill/revive every node in it</title>
+        <title>Zone/Rack ${r} — click to kill/revive every node in it</title>
         <rect class="rack-box" x="${colLeft - RACK_PAD_X}" y="${racksTopY}" width="${NODE_W + RACK_PAD_X * 2}" height="${colH}" rx="10" stroke="${color}"></rect>
-        <text class="rack-box-label" x="${colLeft + NODE_W / 2}" y="${racksTopY + 18}" fill="${color}">RACK ${r}</text>
+        <text class="rack-box-label" x="${colLeft + NODE_W / 2}" y="${racksTopY + 18}" fill="${color}">ZONE/RACK ${r}</text>
       `;
       g.addEventListener("click", () => toggleRack(r));
       rackBoxesLayer.appendChild(g);
@@ -750,7 +750,7 @@
       const subY = labelY + 12;
       const kvY = subY + 13;
       g.innerHTML = `
-        <title>${node.id} — Rack ${node.rack} — ${node.up ? "UP" : "DOWN"}</title>
+        <title>${node.id} — Zone/Rack ${node.rack} — ${node.up ? "UP" : "DOWN"}</title>
         <rect class="node-slot${node.up ? "" : " down"}" x="${slotX}" y="${slotY}" width="${NODE_W}" height="${NODE_H}" rx="9"></rect>
         <use href="#scyllaLogo" class="node-logo${node.up ? "" : " down"}" x="${logoX}" y="${logoY}" width="${LOGO_SIZE}" height="${LOGO_SIZE}"></use>
         <text class="node-label" x="${node.x}" y="${labelY}">${node.id}</text>
@@ -947,7 +947,7 @@
       ? (forcedReplica ? " [smart driver routed directly to a replica]" : " [no live replica available, coordinator is a non-replica]")
       : (forcedNonReplica ? " [non-token-aware: coordinator forced ≠ replica]" : " [no non-replica node available, coordinator is a replica]");
 
-    log("info", `${client.id} → ${coordinator.id}: ${type.toUpperCase()} (${opLabel}) coordinator, natural replicas [${replicas.map((r) => r.id).join(", ")}] spanning ${distinctRacks}/${state.numRacks} racks @ CL=${state.cl} needs ${req}/${rf}${readNote}${coordNote}`);
+    log("info", `${client.id} → ${coordinator.id}: ${type.toUpperCase()} (${opLabel}) coordinator, natural replicas [${replicas.map((r) => r.id).join(", ")}] spanning ${distinctRacks}/${state.numRacks} zones/racks @ CL=${state.cl} needs ${req}/${rf}${readNote}${coordNote}`);
 
     await animatePacket(clientAnimX, client.animY, coordinator.x, coordinator.y, { duration: 260 * SLOWDOWN, fail: false, label: opLabel, type, insetStart: 0 });
     if (stale()) return;
@@ -1045,8 +1045,8 @@
     const anyUp = members.some((n) => n.up);
     members.forEach((n) => (n.up = !anyUp));
     log(anyUp ? "warn" : "info", anyUp
-      ? `Rack ${rackIdx} DOWN — nodes [${members.map((n) => n.id).join(", ")}] failed together (simulated rack outage)`
-      : `Rack ${rackIdx} revived — nodes [${members.map((n) => n.id).join(", ")}] back UP`);
+      ? `Zone/Rack ${rackIdx} DOWN — nodes [${members.map((n) => n.id).join(", ")}] failed together (simulated zone/rack outage)`
+      : `Zone/Rack ${rackIdx} revived — nodes [${members.map((n) => n.id).join(", ")}] back UP`);
     renderNodes();
   }
 
@@ -1121,8 +1121,8 @@
     },
     {
       target: () => document.querySelector('#rackBoxesLayer .rack-box'),
-      title: "Racks",
-      body: "Click a rack's border to kill or revive every node in it together — a whole-rack outage, not just one node.",
+      title: "Zones/Racks",
+      body: "Click a zone/rack's border to kill or revive every node in it together — a whole-zone/rack outage, not just one node.",
       placement: "bottom",
     },
   ];
@@ -1226,7 +1226,7 @@
   refreshClOptions();
   refreshRackOptions();
   layout();
-  log("info", "Simulator ready. Send a request or kill a rack to see how RF/CL determine availability.");
+  log("info", "Simulator ready. Send a request or kill a zone/rack to see how RF/CL determine availability.");
   if (!localStorage.getItem(TOUR_SEEN_KEY)) {
     setTimeout(tourStart, 500);
   }
