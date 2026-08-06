@@ -4,6 +4,8 @@ An interactive, single-file simulator of ScyllaDB's replication, consistency lev
 
 Nodes are grouped into racks; each client sends writes and reads that animate through a coordinator and the key's natural replicas, so you can watch RF/CL decide in real time whether a request succeeds. Click a node to take it down, or a rack's border to take the whole rack down together, and see how the cluster responds.
 
+**Disclaimer:** An independent, educational simulator — not an official ScyllaDB product and not 100% behaviorally accurate to real ScyllaDB internals. Not affiliated with or endorsed by ScyllaDB, Inc.
+
 ![Simulator demo](docs/simulator-demo.gif)
 
 ## Features
