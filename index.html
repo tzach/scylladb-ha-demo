@@ -308,47 +308,6 @@
     <button type="button" class="btn btn--xs" id="btnShowTour">Show tour</button>
   </header>
 
-  <div class="controls">
-    <div class="ctrl">
-      <label>Nodes <span class="val" id="nodesVal">6</span></label>
-      <input type="range" id="nodesRange" min="3" max="12" value="6" step="1" />
-    </div>
-    <div class="ctrl">
-      <label>Racks</label>
-      <select id="racksSelect" class="form-input form-input--compact"></select>
-    </div>
-    <div class="ctrl">
-      <label>Replication Factor <span class="val" id="rfVal">3</span></label>
-      <input type="range" id="rfRange" min="1" max="5" value="3" step="1" />
-    </div>
-    <div class="ctrl">
-      <label>Consistency Level</label>
-      <select id="clSelect" class="form-input form-input--compact"></select>
-    </div>
-    <div class="ctrl">
-      <label>Clients <span class="val" id="clientsVal">2</span></label>
-      <input type="range" id="clientsRange" min="1" max="5" value="2" step="1" />
-    </div>
-    <div class="ctrl toggle-row" style="min-width:auto;" title="When on, the client is token-aware and routes each request straight to one of the key's natural replicas as coordinator — no extra hop. When off, the coordinator is forced to a non-replica node, modeling a dumb proxy that doesn't know where the data lives.">
-      <label class="toggle">
-        <input type="checkbox" id="smartDriversToggle" />
-        <span class="toggle-track"></span>
-        <span class="choice-label" style="font-size:12.5px; color:var(--text-dim); font-weight:400;">Smart Drivers</span>
-      </label>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="ctrl">
-      <label>Key</label>
-      <select id="keySelect" class="form-input form-input--compact"></select>
-    </div>
-    <div class="ctrl">
-      <label>Value <span style="font-weight:400; text-transform:none; letter-spacing:0;">(auto-increments)</span></label>
-      <input type="number" id="valueInput" min="0" max="999" value="1" class="form-input form-input--compact" style="width:70px; font-family:var(--font-mono);" />
-    </div>
-  </div>
-
   <div class="main">
     <div class="stage-card">
       <svg id="stage" viewBox="0 0 640 620" xmlns="http://www.w3.org/2000/svg">
@@ -390,6 +349,47 @@
       </svg>
     </div>
 
+  </div>
+
+  <div class="controls">
+    <div class="ctrl">
+      <label>Nodes <span class="val" id="nodesVal">6</span></label>
+      <input type="range" id="nodesRange" min="3" max="12" value="6" step="1" />
+    </div>
+    <div class="ctrl">
+      <label>Racks</label>
+      <select id="racksSelect" class="form-input form-input--compact"></select>
+    </div>
+    <div class="ctrl">
+      <label>Replication Factor <span class="val" id="rfVal">3</span></label>
+      <input type="range" id="rfRange" min="1" max="5" value="3" step="1" />
+    </div>
+    <div class="ctrl">
+      <label>Consistency Level</label>
+      <select id="clSelect" class="form-input form-input--compact"></select>
+    </div>
+    <div class="ctrl">
+      <label>Clients <span class="val" id="clientsVal">2</span></label>
+      <input type="range" id="clientsRange" min="1" max="5" value="2" step="1" />
+    </div>
+    <div class="ctrl toggle-row" style="min-width:auto;" title="When on, the client is token-aware and routes each request straight to one of the key's natural replicas as coordinator — no extra hop. When off, the coordinator is forced to a non-replica node, modeling a dumb proxy that doesn't know where the data lives.">
+      <label class="toggle">
+        <input type="checkbox" id="smartDriversToggle" />
+        <span class="toggle-track"></span>
+        <span class="choice-label" style="font-size:12.5px; color:var(--text-dim); font-weight:400;">Smart Drivers</span>
+      </label>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="ctrl">
+      <label>Key</label>
+      <select id="keySelect" class="form-input form-input--compact"></select>
+    </div>
+    <div class="ctrl">
+      <label>Value <span style="font-weight:400; text-transform:none; letter-spacing:0;">(auto-increments)</span></label>
+      <input type="number" id="valueInput" min="0" max="999" value="1" class="form-input form-input--compact" style="width:70px; font-family:var(--font-mono);" />
+    </div>
   </div>
 
   <div class="log-card">
