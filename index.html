@@ -881,9 +881,11 @@
   // ---------- core simulation ----------
   // Mirrors the Cassandra/Scylla coordinator contract: the coordinator fails fast with
   // UNAVAILABLE if its failure detector already knows too few natural replicas are live to
-  // meet CL (no network attempt made); otherwise it fans out to every natural replica but
-  // replies to the client the instant CL acks arrive, without waiting for the rest. The client
-  // gets back an ACK carrying the value on success, or a NACK on any failure path.
+  // meet CL (no network attempt made); otherwise it fans out only to the replicas it already
+  // believes are live — a known-down replica is never sent a request, since the coordinator
+  // has no reason to expect an answer — and replies to the client the instant CL acks arrive,
+  // without waiting for the rest. The client gets back an ACK carrying the value on success,
+  // or a NACK on any failure path.
   async function sendRequest(type, client) {
     const myGen = state.gen;
     const stale = () => state.gen !== myGen;
@@ -961,40 +963,41 @@
     }
 
     // Which contacted replica serves the full read: the coordinator's own local copy if it's a
-    // natural replica, otherwise the first remote replica contacted — everyone else only needs
-    // to return a lightweight digest to confirm agreement.
+    // natural replica, otherwise the first remote *reachable* replica contacted — everyone else
+    // only needs to return a lightweight digest to confirm agreement. A known-down replica is
+    // never actually contacted, so it's excluded here too — otherwise it could claim the "data"
+    // slot and leave every replica that's really contacted downgraded to a "digest".
     let dataSent = plan.some((p) => p.isSelf);
     const contacted = plan.map((p) => {
       let label = null;
-      if (type === "read" && !p.isSelf) { label = dataSent ? "digest" : "data"; dataSent = true; }
+      if (type === "read" && !p.isSelf && p.reachable) { label = dataSent ? "digest" : "data"; dataSent = true; }
       return { ...p, label };
     });
 
     const capturedValues = {}; // replica idx -> value seen at the moment it applied/answered (reads only)
 
-    // Fan out to every natural replica in parallel.
+    // Fan out in parallel — but only to replicas the coordinator already believes are live.
     const settleTasks = contacted.map((p) => (async () => {
       if (p.isSelf) {
         if (type === "write") { p.replica.data[key] = value; renderNodeKv(p.replica); }
         else capturedValues[p.replica.idx] = p.replica.data[key];
         return { ...p, ok: true };
       }
+      if (!p.reachable) {
+        // Known down already — don't send a request that has no chance of an answer.
+        log("warn", `${coordinator.id}: skipping ${p.replica.id} — already known down, not contacted`);
+        return { ...p, ok: false };
+      }
       const outLabel = type === "write" ? `${key}=${value}` : `${key}?`;
       const outDur = randomLatency(coordinator, p.replica);
-      await animatePacket(coordinator.x, coordinator.y, p.replica.x, p.replica.y, { duration: outDur, fail: !p.reachable, label: outLabel, type });
+      await animatePacket(coordinator.x, coordinator.y, p.replica.x, p.replica.y, { duration: outDur, fail: false, label: outLabel, type });
       if (stale()) return { ...p, ok: false };
-      if (p.reachable) {
-        if (type === "write") { p.replica.data[key] = value; renderNodeKv(p.replica); }
-        else capturedValues[p.replica.idx] = p.replica.data[key];
-        const backLabel = type === "write" ? `${key} ✓` : `${key}=${fmtVal(p.replica.data[key])}`;
-        const backDur = randomLatency(coordinator, p.replica) * 0.7;
-        await animatePacket(p.replica.x, p.replica.y, coordinator.x, coordinator.y, { duration: backDur, fail: false, label: backLabel, type });
-        return { ...p, ok: true };
-      }
-      if (!stale()) {
-        log("warn", `${coordinator.id} → ${p.replica.id}: TIMEOUT (node down${p.label ? ", " + p.label + " read" : ""})`);
-      }
-      return { ...p, ok: false };
+      if (type === "write") { p.replica.data[key] = value; renderNodeKv(p.replica); }
+      else capturedValues[p.replica.idx] = p.replica.data[key];
+      const backLabel = type === "write" ? `${key} ✓` : `${key}=${fmtVal(p.replica.data[key])}`;
+      const backDur = randomLatency(coordinator, p.replica) * 0.7;
+      await animatePacket(p.replica.x, p.replica.y, coordinator.x, coordinator.y, { duration: backDur, fail: false, label: backLabel, type });
+      return { ...p, ok: true };
     })());
 
     // Race to quorum: resolve as soon as `req` acks land — a real coordinator does not wait
