@@ -360,8 +360,8 @@
 
   <div class="controls">
     <div class="ctrl">
-      <label>Zones/Racks</label>
-      <select id="racksSelect" class="form-input form-input--compact"></select>
+      <label>Zones/Racks <span class="val" id="racksVal">3</span></label>
+      <input type="range" id="racksRange" min="1" max="3" value="3" step="1" />
     </div>
     <div class="ctrl">
       <label>Nodes/Zone <span class="val" id="nodesVal">2</span></label>
@@ -518,7 +518,7 @@
   // ---------- DOM refs ----------
   const $ = (id) => document.getElementById(id);
   const nodesRange = $("nodesRange"), nodesVal = $("nodesVal");
-  const racksSelect = $("racksSelect");
+  const racksRange = $("racksRange"), racksVal = $("racksVal");
   const rfRange = $("rfRange"), rfVal = $("rfVal");
   const clSelect = $("clSelect");
   const clientsRange = $("clientsRange"), clientsVal = $("clientsVal");
@@ -568,19 +568,6 @@
     const stillValid = opts.some((o) => o.v === prev);
     state.cl = stillValid ? prev : "QUORUM";
     clSelect.value = state.cl;
-  }
-
-  // Zones/racks is the primary axis (1-6); node count is zones × nodes-per-zone, so every
-  // zone/rack always has the same number of nodes by construction — no divisor math needed.
-  function refreshRackOptions() {
-    racksSelect.innerHTML = "";
-    for (let d = 1; d <= 6; d++) {
-      const el = document.createElement("option");
-      el.value = d;
-      el.textContent = `${d} zone${d === 1 ? "" : "s"}/rack${d === 1 ? "" : "s"}`;
-      racksSelect.appendChild(el);
-    }
-    racksSelect.value = state.numRacks;
   }
 
   // ---------- layout ----------
@@ -1051,8 +1038,9 @@
     layout();
   }
 
-  racksSelect.addEventListener("change", () => {
-    state.numRacks = Number(racksSelect.value);
+  racksRange.addEventListener("input", () => {
+    state.numRacks = Number(racksRange.value);
+    racksVal.textContent = state.numRacks;
     applyNodeCount();
   });
 
@@ -1219,7 +1207,6 @@
     keySelect.appendChild(el);
   });
   refreshClOptions();
-  refreshRackOptions();
   layout();
   log("info", "Simulator ready. Send a request or kill a zone/rack to see how RF/CL determine availability.");
   if (!localStorage.getItem(TOUR_SEEN_KEY)) {
