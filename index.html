@@ -61,9 +61,16 @@
   }
 
   .wrap {
+    /* Scale the whole app down to 80% so the simulation panel and controls fit on one laptop
+       screen without scrolling. `zoom` (unlike transform: scale) reflows at the smaller size
+       instead of just shrinking the paint with the original layout box left behind. Scoped to
+       .wrap rather than body so the guided tour's position:fixed overlay — appended straight to
+       body, a sibling of .wrap — stays in true (unzoomed) viewport coordinates and still lines
+       up with getBoundingClientRect() on zoomed targets. */
+    zoom: 0.8;
     max-width: 1320px;
     margin: 0 auto;
-    padding: 22px 22px 60px;
+    padding: 22px 22px 30px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -143,8 +150,13 @@
     box-shadow: var(--shadow-1);
     padding: 10px;
     min-width: 380px;
+    /* Fixed regardless of node/rack/client count, so the page layout never jumps and the stage
+       stays above the fold — the SVG's viewBox still reflects the actual content size, but
+       it's scaled (via the default preserveAspectRatio) to fit this constant frame instead of
+       the frame growing/shrinking to match the content. */
+    height: 480px;
   }
-  #stage { width: 100%; height: auto; display: block; }
+  #stage { width: 100%; height: 100%; display: block; }
 
   /* ---------- log ---------- */
   .log-card {
@@ -425,12 +437,12 @@
   const NODE_H = 78;
   const LOGO_SIZE = 24;
   const RACK_PAD_X = 12;
-  const RACK_PAD_TOP = 30;
-  const RACK_PAD_BOTTOM = 14;
-  const NODE_V_GAP = 22;    // gap between stacked nodes within a rack
+  const RACK_PAD_TOP = 24;
+  const RACK_PAD_BOTTOM = 10;
+  const NODE_V_GAP = 18;    // gap between stacked nodes within a rack
   const RACK_GAP = 64;      // gap between adjacent racks — kept wide so groups don't crowd
   const CLIENT_MARGIN = 60; // gap between the client column and the first rack
-  const STAGE_PAD = 30;
+  const STAGE_PAD = 18;
 
   // Each client is a small card with its own round Write/Read icon buttons — request always
   // originates from a specific client, not a random pick, so it's obvious which one issued it.
@@ -609,7 +621,10 @@
     const racksTopY = STAGE_PAD;
     const width = racksStartX + racksTotalW + STAGE_PAD;
     const height = racksTopY + contentH + STAGE_PAD;
-    return { nodesPerRack, colH, contentH, racksStartX, racksTopY, clientX, width: Math.max(640, width), height: Math.max(420, height) };
+    // No large fixed floor here on purpose — the stage should hug its actual content (fewer
+    // nodes/racks/clients means a visibly smaller frame) rather than always padding out to a
+    // fixed minimum canvas size.
+    return { nodesPerRack, colH, contentH, racksStartX, racksTopY, clientX, width: Math.max(360, width), height: Math.max(240, height) };
   }
 
   function layout() {
