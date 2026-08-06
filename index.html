@@ -544,24 +544,19 @@
   const logBody = $("logBody");
 
   // ---------- consistency levels ----------
-  function clOptionsFor(rf) {
-    const opts = [
-      { v: "ANY", label: "ANY (writes only, hinted handoff)" },
+  function clOptionsFor() {
+    return [
+      { v: "ANY", label: "ANY" },
       { v: "ONE", label: "ONE" },
+      { v: "QUORUM", label: "QUORUM" },
+      { v: "ALL", label: "ALL" },
     ];
-    if (rf >= 2) opts.push({ v: "TWO", label: "TWO" });
-    if (rf >= 3) opts.push({ v: "THREE", label: "THREE" });
-    opts.push({ v: "QUORUM", label: "QUORUM  (⌊RF/2⌋+1)" });
-    opts.push({ v: "ALL", label: "ALL  (RF)" });
-    return opts;
   }
 
   function requiredAcks(cl, rf) {
     switch (cl) {
       case "ANY": return 1;
       case "ONE": return 1;
-      case "TWO": return Math.min(2, rf);
-      case "THREE": return Math.min(3, rf);
       case "QUORUM": return Math.floor(rf / 2) + 1;
       case "ALL": return rf;
       default: return 1;
@@ -569,7 +564,7 @@
   }
 
   function refreshClOptions() {
-    const opts = clOptionsFor(state.rf);
+    const opts = clOptionsFor();
     const prev = state.cl;
     clSelect.innerHTML = "";
     opts.forEach((o) => {
