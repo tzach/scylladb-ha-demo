@@ -150,8 +150,13 @@
     box-shadow: var(--shadow-1);
     padding: 10px;
     min-width: 380px;
+    /* Fixed regardless of node/rack/client count, so the page layout never jumps and the stage
+       stays above the fold — the SVG's viewBox still reflects the actual content size, but
+       it's scaled (via the default preserveAspectRatio) to fit this constant frame instead of
+       the frame growing/shrinking to match the content. */
+    height: 480px;
   }
-  #stage { width: 100%; height: auto; display: block; }
+  #stage { width: 100%; height: 100%; display: block; }
 
   /* ---------- log ---------- */
   .log-card {
