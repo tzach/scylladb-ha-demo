@@ -360,12 +360,12 @@
 
   <div class="controls">
     <div class="ctrl">
-      <label>Nodes <span class="val" id="nodesVal">6</span></label>
-      <input type="range" id="nodesRange" min="3" max="12" value="6" step="1" />
-    </div>
-    <div class="ctrl">
       <label>Zones/Racks</label>
       <select id="racksSelect" class="form-input form-input--compact"></select>
+    </div>
+    <div class="ctrl">
+      <label>Nodes/Zone <span class="val" id="nodesVal">2</span></label>
+      <input type="range" id="nodesRange" min="1" max="4" value="2" step="1" />
     </div>
     <div class="ctrl">
       <label>Replication Factor <span class="val" id="rfVal">3</span></label>
@@ -496,13 +496,6 @@
     return chosen;
   }
 
-  // Divisors of n, ascending — the valid rack counts for "every rack has the same number of nodes".
-  function divisorsOf(n) {
-    const out = [];
-    for (let d = 1; d <= n; d++) if (n % d === 0) out.push(d);
-    return out;
-  }
-
   // ScyllaDB DS chart tokens (--chart-1..--chart-8) — theme-reactive categorical colors,
   // so rack coloring stays on-brand and adapts automatically across light/dark/scylla.
   const RACK_CHART_VARS = ["--chart-1", "--chart-2", "--chart-3", "--chart-4", "--chart-5", "--chart-6", "--chart-7", "--chart-8"];
@@ -511,6 +504,7 @@
   const state = {
     numNodes: 6,
     numRacks: 3,
+    nodesPerRack: 2,
     rf: 3,
     cl: "QUORUM",
     numClients: 2,
@@ -576,23 +570,15 @@
     clSelect.value = state.cl;
   }
 
-  // Racks must evenly divide the node count so every rack has the same number of nodes.
+  // Zones/racks is the primary axis (1-6); node count is zones × nodes-per-zone, so every
+  // zone/rack always has the same number of nodes by construction — no divisor math needed.
   function refreshRackOptions() {
-    const divisors = divisorsOf(state.numNodes);
-    const prev = state.numRacks;
     racksSelect.innerHTML = "";
-    divisors.forEach((d) => {
+    for (let d = 1; d <= 6; d++) {
       const el = document.createElement("option");
       el.value = d;
-      el.textContent = `${d} zone${d === 1 ? "" : "s"}/rack${d === 1 ? "" : "s"} (${state.numNodes / d}/zone/rack)`;
+      el.textContent = `${d} zone${d === 1 ? "" : "s"}/rack${d === 1 ? "" : "s"}`;
       racksSelect.appendChild(el);
-    });
-    if (divisors.includes(prev)) {
-      state.numRacks = prev;
-    } else if (divisors.includes(3)) {
-      state.numRacks = 3;
-    } else {
-      state.numRacks = divisors[Math.max(0, divisors.length - 2)] || 1;
     }
     racksSelect.value = state.numRacks;
   }
@@ -1054,20 +1040,26 @@
   }
 
   // ---------- wiring ----------
-  nodesRange.addEventListener("input", () => {
-    state.numNodes = Number(nodesRange.value);
-    nodesVal.textContent = state.numNodes;
+  // Recompute the derived total node count whenever zones or nodes-per-zone change, and clamp
+  // RF (which can't exceed the node count) to match.
+  function applyNodeCount() {
+    state.numNodes = state.numRacks * state.nodesPerRack;
     const maxRf = Math.min(5, state.numNodes);
     rfRange.max = maxRf;
     if (state.rf > maxRf) { state.rf = maxRf; rfRange.value = maxRf; rfVal.textContent = maxRf; }
     refreshClOptions();
-    refreshRackOptions();
     layout();
-  });
+  }
 
   racksSelect.addEventListener("change", () => {
     state.numRacks = Number(racksSelect.value);
-    layout();
+    applyNodeCount();
+  });
+
+  nodesRange.addEventListener("input", () => {
+    state.nodesPerRack = Number(nodesRange.value);
+    nodesVal.textContent = state.nodesPerRack;
+    applyNodeCount();
   });
 
   rfRange.addEventListener("input", () => {
