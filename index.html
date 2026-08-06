@@ -79,9 +79,6 @@
     border-bottom: var(--border-w) solid var(--border);
     padding-bottom: 14px;
   }
-  .brand-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .brand-mark { color: var(--text-emphasis); flex: none; }
-  .brand-mark svg { display: block; height: 16px; width: auto; }
   header.top h1 {
     font-size: 19px;
     font-weight: 700;
@@ -91,14 +88,6 @@
     font-family: var(--font-family);
   }
   header.top h1 span.accent { color: var(--accent); }
-  header.top .sub {
-    color: var(--text-dim);
-    font-size: 12.5px;
-    max-width: 62ch;
-    margin-top: 4px;
-  }
-  header.top .sub a { color: var(--text-link); text-decoration: none; }
-  header.top .sub a:hover { text-decoration: underline; }
 
   /* ---------- controls ---------- */
   .controls {
@@ -138,8 +127,6 @@
   .divider { width: 1px; align-self: stretch; background: var(--border); }
 
   .toggle-row { display: flex; align-items: center; }
-
-  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 
   /* ---------- main layout ---------- */
   .main {
@@ -223,7 +210,7 @@
   .client-box { fill: var(--surface-2); stroke: var(--client); stroke-width: 2; cursor: default; }
   .client-label { fill: var(--client); font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
 
-  .msg-line { stroke-width: 1.5; opacity: .55; }
+  .msg-line { fill: none; stroke-width: 1.5; opacity: .55; }
   .msg-line.ok { stroke: var(--ok); }
   .msg-line.fail { stroke: var(--danger); stroke-dasharray: 4 3; }
   .packet { stroke: none; }
@@ -262,10 +249,53 @@
   }
 
   @media (max-width: 720px) {
-    .btns { margin-left: 0; }
     .controls { flex-direction: column; align-items: stretch; }
     .divider { display: none; }
   }
+
+  /* ---------- guided tour ---------- */
+  .tour-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: transparent;
+  }
+  .tour-highlight {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    /* The huge spread dims the whole viewport outside this box — a classic spotlight cutout
+       without needing an SVG mask. */
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, .6), 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent);
+    transition: left .2s ease, top .2s ease, width .2s ease, height .2s ease;
+  }
+  .tour-tooltip {
+    position: fixed;
+    z-index: 10000;
+    width: 260px;
+    max-width: calc(100vw - 24px);
+    background: var(--bg-surface);
+    border: var(--border-w) solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-3);
+    padding: 14px 16px;
+    transition: left .2s ease, top .2s ease;
+  }
+  .tour-step {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .tour-title { font-size: 14.5px; font-weight: 700; color: var(--text-emphasis); margin: 0 0 6px; }
+  .tour-body { font-size: 12.5px; color: var(--text-dim); line-height: 1.5; margin: 0 0 12px; }
+  .tour-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tour-actions-right { display: flex; gap: 6px; }
 </style>
 </head>
 <body>
@@ -273,17 +303,9 @@
 
   <header class="top">
     <div>
-      <div class="brand-row">
-        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 1506 408" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M32.2908 248.589C39.3815 259.225 48.4362 267.065 59.4883 272.092C70.5238 277.135 81.9088 279.648 93.6267 279.648C100.168 279.648 106.843 278.633 113.667 276.586C120.475 274.538 126.683 271.476 132.276 267.381C137.852 263.287 142.429 258.26 145.974 252.251C149.52 246.259 151.284 239.302 151.284 231.395C151.284 220.227 147.739 211.705 140.648 205.846C133.557 199.987 124.769 195.076 114.283 191.132C103.78 187.187 92.3451 183.359 79.9447 179.68C67.5277 176.002 56.0928 170.892 45.6066 164.35C35.1038 157.809 26.3153 149.02 19.2413 137.985C12.1507 126.95 8.60533 112.019 8.60533 93.2106C8.60533 84.7717 10.4363 75.7669 14.1314 66.2295C17.8099 56.692 23.6023 47.9702 31.5085 40.0639C39.4148 32.1577 49.5681 25.5497 61.9684 20.24C74.3687 14.9304 89.2991 12.2672 106.743 12.2672C122.555 12.2672 137.669 14.4477 152.116 18.8086C166.564 23.1695 179.231 32.0245 190.15 45.3903L158.258 74.4187C153.348 66.7954 146.407 60.6535 137.402 56.0263C128.414 51.399 118.178 49.0687 106.743 49.0687C95.3078 49.0687 86.7691 50.5002 79.5452 53.3631C72.3214 56.226 66.5291 59.9045 62.1681 64.3986C57.8072 68.8926 54.7446 73.7363 52.9636 78.9128C51.1826 84.0893 50.3004 88.8663 50.3004 93.2273C50.3004 105.494 53.8291 114.899 60.9364 121.44C68.0271 127.981 76.8155 133.291 87.3183 137.386C97.8045 141.48 109.256 145.159 121.656 148.421C134.057 151.7 145.508 156.261 155.995 162.12C166.481 167.979 175.269 175.885 182.36 185.839C189.451 195.792 192.996 209.491 192.996 226.935C192.996 240.833 190.333 253.383 185.023 264.552C179.697 275.737 172.556 285.141 163.551 292.764C154.563 300.404 143.927 306.263 131.66 310.341C119.393 314.436 106.31 316.467 92.4116 316.467C73.8694 316.467 56.2925 313.188 39.6644 306.646C23.0363 300.105 9.8204 290.018 0 276.386L32.2908 248.589Z" fill="currentColor"/><path d="M372.443 166.814C365.635 159.723 358.478 154.347 350.988 150.668C343.481 146.99 334.559 145.142 324.206 145.142C313.853 145.142 305.331 146.99 297.841 150.668C290.334 154.347 284.076 159.39 279.033 165.798C273.989 172.207 270.161 179.564 267.581 187.869C264.984 196.192 263.703 204.83 263.703 213.835C263.703 222.84 265.201 231.345 268.197 239.385C271.193 247.424 275.421 254.448 280.863 260.44C286.306 266.432 292.848 271.143 300.488 274.538C308.111 277.951 316.7 279.648 326.254 279.648C336.607 279.648 345.462 277.801 352.835 274.122C360.192 270.444 367 265.068 373.275 257.977L399.441 284.142C389.903 294.778 378.801 302.402 366.118 307.046C353.451 311.673 340.019 314.003 325.838 314.003C310.841 314.003 297.142 311.556 284.742 306.646C272.341 301.736 261.639 294.862 252.651 286.007C243.662 277.152 236.705 266.516 231.795 254.115C226.885 241.715 224.438 228.016 224.438 213.019C224.438 198.023 226.885 184.257 231.795 171.724C236.705 159.19 243.579 148.421 252.434 139.416C261.289 130.428 271.925 123.404 284.326 118.361C296.726 113.317 310.558 110.804 325.821 110.804C339.986 110.804 353.551 113.334 366.501 118.361C379.45 123.404 390.686 131.111 400.24 141.464L372.443 166.814Z" fill="currentColor"/><path d="M413.805 115.298H456.333L513.724 266.582H514.556L569.6 115.298H608.848L516.853 350.805C513.59 359.243 510.195 366.95 506.666 373.908C503.138 380.865 498.926 386.791 494.05 391.701C489.156 396.611 483.264 400.423 476.323 403.152C469.399 405.882 460.926 407.247 450.873 407.247C445.447 407.247 439.937 406.897 434.378 406.232C428.819 405.549 423.459 404.118 418.299 401.937L422.777 368.415C430.084 371.411 437.391 372.909 444.714 372.909C450.407 372.909 455.201 372.16 459.129 370.662C463.057 369.164 466.436 366.983 469.282 364.12C472.128 361.258 474.492 357.912 476.389 354.1C478.27 350.272 480.184 345.928 482.082 341.018L494 310.358L413.805 115.331V115.298Z" fill="currentColor"/><path d="M636.196 0H672.997V309.093H636.196V0Z" fill="currentColor"/><path d="M712.928 0H749.729V309.093H712.928V0Z" fill="currentColor"/><path d="M801.212 139.017C811.565 129.479 823.565 122.322 837.198 117.545C850.83 112.785 864.445 110.388 878.077 110.388C891.709 110.388 904.442 112.169 914.679 115.698C924.899 119.243 933.288 124.02 939.812 130.012C946.354 136.004 951.197 142.895 954.327 150.652C957.456 158.425 959.02 166.531 959.02 174.986V273.939C959.02 280.764 959.154 287.022 959.436 292.748C959.703 298.474 960.119 303.933 960.668 309.11H927.961C927.146 299.289 926.73 289.485 926.73 279.665H925.914C917.741 292.199 908.054 301.07 896.886 306.247C885.717 311.423 872.767 314.02 858.037 314.02C849.049 314.02 840.46 312.788 832.287 310.341C824.115 307.894 816.958 304.216 810.816 299.306C804.69 294.396 799.847 288.337 796.301 281.113C792.756 273.889 790.992 265.517 790.992 255.963C790.992 243.429 793.788 232.927 799.381 224.488C804.957 216.049 812.597 209.158 822.284 203.848C831.954 198.539 843.273 194.727 856.222 192.397C869.172 190.083 883.004 188.918 897.718 188.918H924.699V180.745C924.699 175.835 923.75 170.925 921.836 166.031C919.922 161.121 917.059 156.694 913.247 152.749C909.436 148.804 904.659 145.658 898.933 143.345C893.207 141.031 886.383 139.866 878.493 139.866C871.402 139.866 865.211 140.548 859.884 141.913C854.558 143.278 849.731 144.976 845.37 147.023C841.009 149.07 837.048 151.451 833.519 154.18C829.974 156.91 826.562 159.49 823.299 161.953L801.228 139.05L801.212 139.017ZM905.075 215.882C896.353 215.882 887.415 216.365 878.293 217.314C869.155 218.279 860.85 220.11 853.36 222.84C845.853 225.57 839.728 229.381 834.967 234.291C830.19 239.202 827.81 245.477 827.81 253.1C827.81 264.285 831.555 272.325 839.062 277.218C846.552 282.128 856.705 284.575 869.522 284.575C879.608 284.575 888.18 282.877 895.288 279.465C902.362 276.053 908.088 271.626 912.465 266.183C916.826 260.74 919.955 254.665 921.869 247.99C923.767 241.316 924.732 234.708 924.732 228.166V215.899H905.108L905.075 215.882Z" fill="currentColor"/><path d="M1007.66 19.6241H1108.64C1129.08 19.6241 1147.01 21.9378 1162.4 26.5817C1177.8 31.2255 1191.15 37.4174 1202.47 45.1905C1213.77 52.9636 1223.17 61.8852 1230.68 71.9719C1238.17 82.0586 1244.09 92.4116 1248.47 103.048C1252.83 113.684 1255.96 124.303 1257.88 134.939C1259.77 145.575 1260.74 155.379 1260.74 164.384C1260.74 182.926 1257.33 200.836 1250.52 218.146C1243.7 235.457 1233.61 250.853 1220.26 264.352C1206.89 277.851 1190.33 288.686 1170.58 296.859C1150.8 305.032 1127.98 309.126 1102.08 309.126H1007.64V19.6241H1007.66ZM1046.92 272.308H1096.39C1113.02 272.308 1128.75 270.061 1143.61 265.567C1158.46 261.073 1171.47 254.315 1182.66 245.327C1193.83 236.339 1202.7 225.087 1209.24 211.588C1215.78 198.089 1219.04 182.36 1219.04 164.367C1219.04 155.096 1217.55 144.277 1214.55 131.86C1211.55 119.459 1205.9 107.675 1197.59 96.4896C1189.27 85.321 1177.77 75.8501 1163.03 68.077C1148.32 60.3039 1129.23 56.4257 1105.79 56.4257H1046.92V272.308Z" fill="currentColor"/><path d="M1304.85 19.6241H1405.43C1417.97 19.6241 1429.62 21.1222 1440.39 24.1182C1451.16 27.1143 1460.43 31.5418 1468.18 37.4007C1475.96 43.2597 1482.08 50.7665 1486.58 59.8878C1491.07 69.0257 1493.32 79.7117 1493.32 91.9789C1493.32 108.607 1488.67 122.172 1479.42 132.659C1470.15 143.161 1458.16 150.851 1443.45 155.762V156.577C1452.17 157.126 1460.34 159.373 1467.98 163.318C1475.61 167.28 1482.23 172.456 1487.81 178.848C1493.38 185.256 1497.83 192.68 1501.09 201.135C1504.37 209.591 1506 218.712 1506 228.532C1506 241.615 1503.34 253.133 1498.03 263.087C1492.72 273.04 1485.43 281.429 1476.16 288.237C1466.88 295.061 1456.13 300.238 1443.87 303.767C1431.6 307.312 1418.38 309.076 1404.2 309.076H1304.85V19.6241ZM1344.1 139.833H1397.66C1405.02 139.833 1411.97 139.083 1418.52 137.585C1425.06 136.087 1430.78 133.574 1435.69 130.029C1440.6 126.483 1444.48 121.989 1447.34 116.53C1450.21 111.087 1451.64 104.412 1451.64 96.4896C1451.64 85.038 1447.96 75.1011 1440.6 66.6456C1433.25 58.2067 1421.66 53.9789 1405.85 53.9789H1344.11V139.833H1344.1ZM1344.1 274.755H1401.74C1407.73 274.755 1414.34 274.139 1421.56 272.907C1428.78 271.676 1435.53 269.229 1441.8 265.55C1448.06 261.872 1453.39 256.895 1457.75 250.62C1462.11 244.345 1464.29 236.039 1464.29 225.686C1464.29 208.509 1458.7 195.642 1447.53 187.054C1436.36 178.465 1421.23 174.171 1402.15 174.171H1344.1V274.755Z" fill="currentColor"/></svg></span>
-        <span class="tag" style="font-family:var(--font-mono);">HA SIMULATOR</span>
-      </div>
       <h1>ScyllaDB <span class="accent">High-Availability</span> Simulator</h1>
-      <div class="sub">
-        Interactive model of replication, consistency levels &amp; fault tolerance, based on
-        <a href="https://docs.scylladb.com/manual/stable/architecture/architecture-fault-tolerance.html" target="_blank" rel="noopener">ScyllaDB's fault-tolerance architecture</a>.
-        Click any node to take it down, or a rack's border to take down the whole rack. Watch how RF and CL decide whether a request still succeeds.
-      </div>
     </div>
+    <button type="button" class="btn btn--xs" id="btnShowTour">Show tour</button>
   </header>
 
   <div class="controls">
@@ -307,22 +329,11 @@
       <label>Clients <span class="val" id="clientsVal">2</span></label>
       <input type="range" id="clientsRange" min="1" max="5" value="2" step="1" />
     </div>
-    <div class="ctrl">
-      <label>Auto-traffic rate <span class="val" id="rateVal">1.0</span>/s</label>
-      <input type="range" id="rateRange" min="2" max="50" value="10" step="1" />
-    </div>
-    <div class="ctrl toggle-row" style="min-width:auto;">
+    <div class="ctrl toggle-row" style="min-width:auto;" title="When on, the client is token-aware and routes each request straight to one of the key's natural replicas as coordinator — no extra hop. When off, the coordinator is forced to a non-replica node, modeling a dumb proxy that doesn't know where the data lives.">
       <label class="toggle">
-        <input type="checkbox" id="autoToggle" />
+        <input type="checkbox" id="smartDriversToggle" />
         <span class="toggle-track"></span>
-        <span class="choice-label" style="font-size:12.5px; color:var(--text-dim); font-weight:400;">Auto traffic</span>
-      </label>
-    </div>
-    <div class="ctrl toggle-row" style="min-width:auto;" title="When on, the coordinator for each request is picked from nodes that aren't a replica for that key — modeling a proxy-style, non-token-aware hop.">
-      <label class="toggle">
-        <input type="checkbox" id="nonReplicaCoordToggle" checked />
-        <span class="toggle-track"></span>
-        <span class="choice-label" style="font-size:12.5px; color:var(--text-dim); font-weight:400;">Coordinator ≠ replica</span>
+        <span class="choice-label" style="font-size:12.5px; color:var(--text-dim); font-weight:400;">Smart Drivers</span>
       </label>
     </div>
 
@@ -335,13 +346,6 @@
     <div class="ctrl">
       <label>Value <span style="font-weight:400; text-transform:none; letter-spacing:0;">(auto-increments)</span></label>
       <input type="number" id="valueInput" min="0" max="999" value="1" class="form-input form-input--compact" style="width:70px; font-family:var(--font-mono);" />
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="btns">
-      <button class="btn btn--secondary" id="btnWrite">Send Write</button>
-      <button class="btn btn--primary" id="btnRead">Send Read</button>
     </div>
   </div>
 
@@ -417,19 +421,45 @@
   const NODE_V_GAP = 22;    // gap between stacked nodes within a rack
   const RACK_GAP = 64;      // gap between adjacent racks — kept wide so groups don't crowd
   const CLIENT_MARGIN = 60; // gap between the client column and the first rack
-  const CLIENT_W = 44, CLIENT_H = 32;
   const STAGE_PAD = 30;
+
+  // Each client is a small card with its own round Write/Read icon buttons — request always
+  // originates from a specific client, not a random pick, so it's obvious which one issued it.
+  const CLIENT_PAD = 6;
+  const CLIENT_LABEL_H = 18;
+  const CLIENT_BTN_SIZE = 28;
+  const CLIENT_BTN_GAP = 8;   // horizontal gap between the two round buttons
+  const CLIENT_ROW_GAP = 6;   // vertical gap between the label and the button row
+  const CLIENT_W = CLIENT_PAD * 2 + CLIENT_BTN_SIZE * 2 + CLIENT_BTN_GAP;
+  const CLIENT_CARD_H = CLIENT_PAD * 2 + CLIENT_LABEL_H + CLIENT_ROW_GAP + CLIENT_BTN_SIZE;
+  const CLIENT_STACK_GAP = 18; // vertical gap between stacked client cards
+  // The label above the buttons pushes their row below the card's true geometric center — this
+  // offset re-centers a client's message lines on the button row itself, not the whole card.
+  const CLIENT_ANIM_Y_OFFSET = CLIENT_PAD + CLIENT_LABEL_H + CLIENT_ROW_GAP + CLIENT_BTN_SIZE / 2 - CLIENT_CARD_H / 2;
 
   function fmtVal(v) { return v === undefined ? "∅" : v; }
 
   // Deterministic hash so a given key always routes to the same token, and therefore the same
   // natural replicas — real drivers don't re-hash a key to a new random position every request.
+  // FNV-1a, kept as a fallback for any key outside the fixed KEYS set: a plain polynomial hash on
+  // single adjacent ASCII chars (a-f) maps them to consecutive small integers, which is about the
+  // worst possible input for `% n`.
   function hashKey(key) {
-    let h = 0;
-    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
-    return h;
+    let h = 2166136261;
+    for (let i = 0; i < key.length; i++) {
+      h ^= key.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
   }
-  function tokenIndexForKey(key, n) { return hashKey(key) % n; }
+  // For the demo's actual key set (KEYS, a fixed small list) use each key's own index rather than
+  // its hash: with only 6 keys, even a perfectly uniform hash collides two keys onto the same
+  // token more often than not for n <= 7 (birthday paradox) — indexing guarantees every key gets
+  // a distinct token whenever n >= KEYS.length, and the most even possible split otherwise.
+  function tokenIndexForKey(key, n) {
+    const idx = KEYS.indexOf(key);
+    return (idx >= 0 ? idx : hashKey(key)) % n;
+  }
 
   // Rack-aware replica placement, same spirit as NetworkTopologyStrategy: walk the ring
   // clockwise from the token and prefer nodes from racks not yet represented, only doubling
@@ -471,14 +501,11 @@
     rf: 3,
     cl: "QUORUM",
     numClients: 2,
-    autoTraffic: false,
-    ratePerSec: 1.0,
     nodes: [],   // {id, idx, x, y, up, rack}
     clients: [], // {id, x, y}
-    autoTimer: null,
     gen: 0,
     writeCounters: {},
-    forceNonReplicaCoordinator: true,
+    smartDrivers: false, // token-aware: route straight to a replica as coordinator, no proxy hop
   };
 
   // ---------- DOM refs ----------
@@ -488,11 +515,10 @@
   const rfRange = $("rfRange"), rfVal = $("rfVal");
   const clSelect = $("clSelect");
   const clientsRange = $("clientsRange"), clientsVal = $("clientsVal");
-  const rateRange = $("rateRange"), rateVal = $("rateVal");
-  const autoToggle = $("autoToggle");
-  const nonReplicaCoordToggle = $("nonReplicaCoordToggle");
+  const smartDriversToggle = $("smartDriversToggle");
   const keySelect = $("keySelect"), valueInput = $("valueInput");
-  const btnWrite = $("btnWrite"), btnRead = $("btnRead"), btnClearLog = $("btnClearLog");
+  const btnClearLog = $("btnClearLog");
+  const btnShowTour = $("btnShowTour");
   const stageEl = $("stage");
   const nodesLayer = $("nodesLayer"), clientsLayer = $("clientsLayer"),
         messagesLayer = $("messagesLayer"), rackBoxesLayer = $("rackBoxesLayer");
@@ -563,12 +589,14 @@
     const nodesPerRack = state.numNodes / state.numRacks;
     const colH = RACK_PAD_TOP + nodesPerRack * NODE_H + Math.max(0, nodesPerRack - 1) * NODE_V_GAP + RACK_PAD_BOTTOM;
     const racksTotalW = state.numRacks * NODE_W + (state.numRacks - 1) * RACK_GAP;
+    const clientsStackH = state.numClients * CLIENT_CARD_H + Math.max(0, state.numClients - 1) * CLIENT_STACK_GAP;
+    const contentH = Math.max(colH, clientsStackH);
     const clientX = STAGE_PAD + CLIENT_W / 2;
     const racksStartX = clientX + CLIENT_W / 2 + CLIENT_MARGIN;
     const racksTopY = STAGE_PAD;
     const width = racksStartX + racksTotalW + STAGE_PAD;
-    const height = racksTopY + colH + STAGE_PAD;
-    return { nodesPerRack, colH, racksStartX, racksTopY, clientX, width: Math.max(640, width), height: Math.max(420, height) };
+    const height = racksTopY + contentH + STAGE_PAD;
+    return { nodesPerRack, colH, contentH, racksStartX, racksTopY, clientX, width: Math.max(640, width), height: Math.max(420, height) };
   }
 
   function layout() {
@@ -596,11 +624,11 @@
     }
     const c = state.numClients;
     state.clients = [];
-    const top = dims.racksTopY + dims.colH / 2 - Math.min(dims.colH / 2, 140);
-    const bottom = dims.racksTopY + dims.colH / 2 + Math.min(dims.colH / 2, 140);
+    const clientsStackH = c * CLIENT_CARD_H + Math.max(0, c - 1) * CLIENT_STACK_GAP;
+    const firstCenterY = dims.racksTopY + dims.contentH / 2 - clientsStackH / 2 + CLIENT_CARD_H / 2;
     for (let i = 0; i < c; i++) {
-      const y = c === 1 ? (top + bottom) / 2 : top + (i * (bottom - top)) / (c - 1);
-      state.clients.push({ id: "C" + (i + 1), x: dims.clientX, y });
+      const y = firstCenterY + i * (CLIENT_CARD_H + CLIENT_STACK_GAP);
+      state.clients.push({ id: "C" + (i + 1), x: dims.clientX, y, animY: y + CLIENT_ANIM_Y_OFFSET });
     }
     renderStatic();
   }
@@ -629,13 +657,36 @@
   function renderStatic() {
     renderRackBoxes();
 
-    // clients
+    // clients — each is a small card with its own round Write/Read icon buttons, so a request
+    // always originates from a specific, visible client rather than a random pick. The icons are
+    // inline SVG (a pencil for write, an eye for read) rather than the DS icon font, since the
+    // font file itself isn't vendored alongside this single-file demo.
+    const ICON_EDIT = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>';
+    const ICON_EYE = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
     clientsLayer.innerHTML = "";
     state.clients.forEach((c) => {
+      const boxLeft = c.x - CLIENT_W / 2;
+      const boxTop = c.y - CLIENT_CARD_H / 2;
       const g = document.createElementNS(svgNS, "g");
       g.innerHTML = `
-        <rect class="client-box" x="${c.x - CLIENT_W / 2}" y="${c.y - CLIENT_H / 2}" width="${CLIENT_W}" height="${CLIENT_H}" rx="8"></rect>
-        <text class="client-label" x="${c.x}" y="${c.y + 1}">${c.id}</text>`;
+        <rect class="client-box" x="${boxLeft}" y="${boxTop}" width="${CLIENT_W}" height="${CLIENT_CARD_H}" rx="9"></rect>
+        <text class="client-label" x="${c.x}" y="${boxTop + CLIENT_PAD + CLIENT_LABEL_H / 2 + 1}">${c.id}</text>
+      `;
+      const fo = document.createElementNS(svgNS, "foreignObject");
+      fo.setAttribute("x", boxLeft + CLIENT_PAD);
+      fo.setAttribute("y", boxTop + CLIENT_PAD + CLIENT_LABEL_H + CLIENT_ROW_GAP);
+      fo.setAttribute("width", CLIENT_W - CLIENT_PAD * 2);
+      fo.setAttribute("height", CLIENT_BTN_SIZE);
+      fo.innerHTML = `
+        <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex; justify-content:center; align-items:center; gap:${CLIENT_BTN_GAP}px; width:100%; height:100%;">
+          <button type="button" class="btn btn--fab btn--secondary" style="width:${CLIENT_BTN_SIZE}px; height:${CLIENT_BTN_SIZE}px; padding:0;" title="Send write from ${c.id}" aria-label="Send write from ${c.id}">${ICON_EDIT}</button>
+          <button type="button" class="btn btn--fab btn--primary" style="width:${CLIENT_BTN_SIZE}px; height:${CLIENT_BTN_SIZE}px; padding:0;" title="Send read from ${c.id}" aria-label="Send read from ${c.id}">${ICON_EYE}</button>
+        </div>
+      `;
+      const [writeBtn, readBtn] = fo.querySelectorAll("button");
+      writeBtn.addEventListener("click", () => sendRequest("write", c));
+      readBtn.addEventListener("click", () => sendRequest("read", c));
+      g.appendChild(fo);
       clientsLayer.appendChild(g);
     });
 
@@ -721,7 +772,7 @@
   }
 
   function animatePacket(rawX1, rawY1, rawX2, rawY2, opts) {
-    const { duration, fail, label } = opts;
+    const { duration, fail, label, type } = opts;
     // Pull both ends in from the node/client centers so the arrowhead lands just outside the
     // destination shape instead of being buried under it.
     const INSET = 30;
@@ -730,13 +781,26 @@
     const ux = ddx / len, uy = ddy / len;
     const x1 = rawX1 + ux * INSET, y1 = rawY1 + uy * INSET;
     const x2 = rawX2 - ux * INSET, y2 = rawY2 - uy * INSET;
+
+    // Bow the path out into a quadratic curve, perpendicular to the direct line, instead of a
+    // straight segment — so a coordinator's several concurrent hops (full read + digest reads,
+    // or repeated auto-traffic between the same pair) fan out visually instead of overlapping.
+    // Reads get a visibly flatter curve than writes (both still randomized in direction and
+    // magnitude), so a glance at the stage tells the two apart even mid-flight.
+    const segLen = Math.hypot(x2 - x1, y2 - y1) || 1;
+    const px = -(y2 - y1) / segLen, py = (x2 - x1) / segLen;
+    const bowFactor = type === "read" ? 0.11 : 0.16;
+    const bowRange = type === "read" ? [10, 34] : [16, 50];
+    const bow = Math.min(bowRange[1], Math.max(bowRange[0], segLen * bowFactor)) * (Math.random() < 0.5 ? 1 : -1);
+    const cx = (x1 + x2) / 2 + px * bow, cy = (y1 + y2) / 2 + py * bow;
+
     return new Promise((resolve) => {
-      const line = document.createElementNS(svgNS, "line");
-      line.setAttribute("class", "msg-line " + (fail ? "fail" : "ok"));
-      line.setAttribute("x1", x1); line.setAttribute("y1", y1);
-      line.setAttribute("x2", x2); line.setAttribute("y2", y2);
-      line.setAttribute("marker-end", fail ? "url(#arrowFail)" : "url(#arrowOk)");
-      messagesLayer.appendChild(line);
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("class", "msg-line " + (fail ? "fail" : "ok"));
+      path.setAttribute("d", `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`);
+      path.setAttribute("marker-end", fail ? "url(#arrowFail)" : "url(#arrowOk)");
+      messagesLayer.appendChild(path);
+      const totalLength = path.getTotalLength();
 
       const dot = document.createElementNS(svgNS, "circle");
       dot.setAttribute("r", 5);
@@ -756,19 +820,19 @@
       function frame(now) {
         const t = Math.min((now - start) / duration, 1);
         const frac = Math.min(t, cutoff);
-        const cx = x1 + (x2 - x1) * frac, cy = y1 + (y2 - y1) * frac;
-        dot.setAttribute("cx", cx);
-        dot.setAttribute("cy", cy);
+        const pt = path.getPointAtLength(totalLength * frac);
+        dot.setAttribute("cx", pt.x);
+        dot.setAttribute("cy", pt.y);
         if (labelEl) {
-          labelEl.setAttribute("x", cx);
-          labelEl.setAttribute("y", cy - 11);
+          labelEl.setAttribute("x", pt.x);
+          labelEl.setAttribute("y", pt.y - 11);
         }
         if (t < 1) {
           requestAnimationFrame(frame);
         } else {
           if (fail) dot.setAttribute("class", "packet dropped");
           setTimeout(() => {
-            line.remove(); dot.remove(); if (labelEl) labelEl.remove(); resolve();
+            path.remove(); dot.remove(); if (labelEl) labelEl.remove(); resolve();
           }, (fail ? 260 : 120) * SLOWDOWN);
         }
       }
@@ -798,7 +862,7 @@
   // meet CL (no network attempt made); otherwise it fans out to every natural replica but
   // replies to the client the instant CL acks arrive, without waiting for the rest. The client
   // gets back an ACK carrying the value on success, or a NACK on any failure path.
-  async function sendRequest(type) {
+  async function sendRequest(type, client) {
     const myGen = state.gen;
     const stale = () => state.gen !== myGen;
 
@@ -820,7 +884,6 @@
       return;
     }
 
-    const client = state.clients[Math.floor(Math.random() * state.clients.length)];
     const n = state.numNodes;
     const rf = Math.min(state.rf, n);
     const tokenStart = tokenIndexForKey(key, n);
@@ -830,11 +893,17 @@
     const req = requiredAcks(state.cl, rf);
     const anyHintFallback = state.cl === "ANY" && type === "write";
 
-    // A token-aware driver often deliberately routes to a non-replica coordinator (proxy-only
-    // hop) rather than one that already holds the data — that's what this option models.
+    // A smart (token-aware) driver knows which nodes hold the key and routes straight to one of
+    // them as coordinator, skipping the extra proxy hop. A non-token-aware driver instead goes
+    // through whatever node it's connected to, which is deliberately forced to a non-replica
+    // here so every replica hop is a real network round trip.
     let coordinatorPool = upNodes;
+    let forcedReplica = false;
     let forcedNonReplica = false;
-    if (state.forceNonReplicaCoordinator) {
+    if (state.smartDrivers) {
+      const replicaUp = upNodes.filter((nd) => replicaIdxs.includes(nd.idx));
+      if (replicaUp.length > 0) { coordinatorPool = replicaUp; forcedReplica = true; }
+    } else {
       const nonReplicaUp = upNodes.filter((nd) => !replicaIdxs.includes(nd.idx));
       if (nonReplicaUp.length > 0) { coordinatorPool = nonReplicaUp; forcedNonReplica = true; }
     }
@@ -849,19 +918,19 @@
     });
     const knownReachable = plan.filter((p) => p.reachable).length;
     const readNote = type === "read" ? " [full read + digest reads]" : "";
-    const coordNote = state.forceNonReplicaCoordinator
-      ? (forcedNonReplica ? " [coordinator forced ≠ replica]" : " [no non-replica node available, coordinator is a replica]")
-      : "";
+    const coordNote = state.smartDrivers
+      ? (forcedReplica ? " [smart driver routed directly to a replica]" : " [no live replica available, coordinator is a non-replica]")
+      : (forcedNonReplica ? " [non-token-aware: coordinator forced ≠ replica]" : " [no non-replica node available, coordinator is a replica]");
 
     log("info", `${client.id} → ${coordinator.id}: ${type.toUpperCase()} (${opLabel}) coordinator, natural replicas [${replicas.map((r) => r.id).join(", ")}] spanning ${distinctRacks}/${state.numRacks} racks @ CL=${state.cl} needs ${req}/${rf}${readNote}${coordNote}`);
 
-    await animatePacket(client.x, client.y, coordinator.x, coordinator.y, { duration: 260 * SLOWDOWN, fail: false, label: opLabel });
+    await animatePacket(client.x, client.animY, coordinator.x, coordinator.y, { duration: 260 * SLOWDOWN, fail: false, label: opLabel, type });
     if (stale()) return;
 
     if (knownReachable < req && !anyHintFallback) {
       log("fail", `${coordinator.id}: UNAVAILABLE — only ${knownReachable}/${rf} replicas reachable, need ${req}. Rejected before contacting replicas (fail-fast).`);
       log("fail", `${coordinator.id} → ${client.id}: NACK (${key})`);
-      await animatePacket(coordinator.x, coordinator.y, client.x, client.y, { duration: 220 * SLOWDOWN, fail: true, label: `NACK ${key}` });
+      await animatePacket(coordinator.x, coordinator.y, client.x, client.animY, { duration: 220 * SLOWDOWN, fail: true, label: `NACK ${key}`, type });
       clearHighlight();
       return;
     }
@@ -887,14 +956,14 @@
       }
       const outLabel = type === "write" ? `${key}=${value}` : `${key}?`;
       const outDur = randomLatency(coordinator, p.replica);
-      await animatePacket(coordinator.x, coordinator.y, p.replica.x, p.replica.y, { duration: outDur, fail: !p.reachable, label: outLabel });
+      await animatePacket(coordinator.x, coordinator.y, p.replica.x, p.replica.y, { duration: outDur, fail: !p.reachable, label: outLabel, type });
       if (stale()) return { ...p, ok: false };
       if (p.reachable) {
         if (type === "write") { p.replica.data[key] = value; renderNodeKv(p.replica); }
         else capturedValues[p.replica.idx] = p.replica.data[key];
         const backLabel = type === "write" ? `${key} ✓` : `${key}=${fmtVal(p.replica.data[key])}`;
         const backDur = randomLatency(coordinator, p.replica) * 0.7;
-        await animatePacket(p.replica.x, p.replica.y, coordinator.x, coordinator.y, { duration: backDur, fail: false, label: backLabel });
+        await animatePacket(p.replica.x, p.replica.y, coordinator.x, coordinator.y, { duration: backDur, fail: false, label: backLabel, type });
         return { ...p, ok: true };
       }
       if (!stale()) {
@@ -925,7 +994,7 @@
     const readValue = primaryValue !== undefined ? primaryValue : Object.values(capturedValues)[0];
 
     const replyLabel = !success ? `NACK ${key}` : type === "write" ? `ACK ${key}=${value}` : `ACK ${key}=${fmtVal(readValue)}`;
-    await animatePacket(coordinator.x, coordinator.y, client.x, client.y, { duration: 260 * SLOWDOWN, fail: !success, label: replyLabel });
+    await animatePacket(coordinator.x, coordinator.y, client.x, client.animY, { duration: 260 * SLOWDOWN, fail: !success, label: replyLabel, type });
     if (stale()) return;
 
     if (hinted) {
@@ -954,17 +1023,6 @@
       ? `Rack ${rackIdx} DOWN — nodes [${members.map((n) => n.id).join(", ")}] failed together (simulated rack outage)`
       : `Rack ${rackIdx} revived — nodes [${members.map((n) => n.id).join(", ")}] back UP`);
     renderNodes();
-  }
-
-  // ---------- auto traffic ----------
-  function scheduleAuto() {
-    clearTimeout(state.autoTimer);
-    if (!state.autoTraffic) return;
-    const delay = 1000 / state.ratePerSec + (Math.random() * 300 - 150);
-    state.autoTimer = setTimeout(() => {
-      sendRequest(Math.random() < 0.7 ? "read" : "write");
-      scheduleAuto();
-    }, Math.max(120, delay));
   }
 
   // ---------- wiring ----------
@@ -1005,24 +1063,134 @@
     layout();
   });
 
-  rateRange.addEventListener("input", () => {
-    state.ratePerSec = Number(rateRange.value) / 10;
-    rateVal.textContent = state.ratePerSec.toFixed(1);
-    scheduleAuto();
+  smartDriversToggle.addEventListener("change", () => {
+    state.smartDrivers = smartDriversToggle.checked;
   });
 
-  autoToggle.addEventListener("change", () => {
-    state.autoTraffic = autoToggle.checked;
-    scheduleAuto();
-  });
-
-  nonReplicaCoordToggle.addEventListener("change", () => {
-    state.forceNonReplicaCoordinator = nonReplicaCoordToggle.checked;
-  });
-
-  btnWrite.addEventListener("click", () => sendRequest("write"));
-  btnRead.addEventListener("click", () => sendRequest("read"));
   btnClearLog.addEventListener("click", () => (logBody.innerHTML = ""));
+
+  // ---------- guided tour ----------
+  // A minimal WalkMe-style spotlight tour: a full-page overlay, a highlighted cutout around the
+  // current target (CSS box-shadow trick — no SVG mask needed), and a tooltip card with
+  // Back/Next/Skip. Targets are re-queried live on each step rather than cached, since layout()
+  // tears down and rebuilds the SVG on every control change.
+  const TOUR_SEEN_KEY = "scylladb-ha-tour-seen";
+  const tourSteps = [
+    {
+      target: () => document.querySelector('#clientsLayer button[title^="Send write"]'),
+      title: "Send a write",
+      body: "Each client can act on its own. Click the pencil to write the next value for the selected key from that client.",
+      placement: "right",
+    },
+    {
+      target: () => document.querySelector('#clientsLayer button[title^="Send read"]'),
+      title: "Send a read",
+      body: "Click the eye to read the current value of the selected key from that client.",
+      placement: "right",
+    },
+    {
+      target: () => document.querySelector('#nodesLayer .node-slot'),
+      title: "Nodes",
+      body: "Click any node to take it down or bring it back up, and watch how RF and CL decide whether requests still succeed.",
+      placement: "bottom",
+    },
+    {
+      target: () => document.querySelector('#rackBoxesLayer .rack-box'),
+      title: "Racks",
+      body: "Click a rack's border to kill or revive every node in it together — a whole-rack outage, not just one node.",
+      placement: "bottom",
+    },
+  ];
+  let tourIndex = 0;
+  let tourEls = null;
+
+  function tourPosition() {
+    if (!tourEls) return;
+    const target = tourSteps[tourIndex].target();
+    if (!target) { tourEnd(); return; }
+    const r = target.getBoundingClientRect();
+    const pad = 6;
+    tourEls.highlight.style.left = (r.left - pad) + "px";
+    tourEls.highlight.style.top = (r.top - pad) + "px";
+    tourEls.highlight.style.width = (r.width + pad * 2) + "px";
+    tourEls.highlight.style.height = (r.height + pad * 2) + "px";
+    tourEls.highlight.style.borderRadius = (r.width + pad * 2 <= (r.height + pad * 2) * 1.4) ? "999px" : "10px";
+
+    const tw = tourEls.tooltip.offsetWidth, th = tourEls.tooltip.offsetHeight;
+    const gap = 14;
+    const placement = tourSteps[tourIndex].placement;
+    let left, top;
+    if (placement === "right") { left = r.right + gap; top = r.top + r.height / 2 - th / 2; }
+    else { left = r.left + r.width / 2 - tw / 2; top = r.bottom + gap; }
+    left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+    top = Math.max(8, Math.min(top, window.innerHeight - th - 8));
+    tourEls.tooltip.style.left = left + "px";
+    tourEls.tooltip.style.top = top + "px";
+  }
+
+  function tourRender() {
+    const step = tourSteps[tourIndex];
+    const last = tourIndex === tourSteps.length - 1;
+    tourEls.tooltip.innerHTML = `
+      <div class="tour-step">Step ${tourIndex + 1} of ${tourSteps.length}</div>
+      <h3 class="tour-title">${step.title}</h3>
+      <p class="tour-body">${step.body}</p>
+      <div class="tour-actions">
+        <button type="button" class="btn btn--xs tour-skip">Skip</button>
+        <div class="tour-actions-right">
+          ${tourIndex > 0 ? '<button type="button" class="btn btn--xs tour-back">Back</button>' : ""}
+          <button type="button" class="btn btn--xs btn--primary tour-next">${last ? "Done" : "Next"}</button>
+        </div>
+      </div>
+    `;
+    tourEls.tooltip.querySelector(".tour-skip").addEventListener("click", tourEnd);
+    const backBtn = tourEls.tooltip.querySelector(".tour-back");
+    if (backBtn) backBtn.addEventListener("click", () => { tourIndex--; tourShow(); });
+    tourEls.tooltip.querySelector(".tour-next").addEventListener("click", () => {
+      if (last) tourEnd();
+      else { tourIndex++; tourShow(); }
+    });
+  }
+
+  function tourShow() {
+    const target = tourSteps[tourIndex].target();
+    if (!target) { tourEnd(); return; }
+    target.scrollIntoView({ block: "center", behavior: "auto" });
+    tourRender();
+    // Called synchronously, not via requestAnimationFrame: reading tooltip.offsetWidth inside
+    // tourPosition() already forces the layout it needs, and rAF has no guaranteed timing here
+    // (e.g. right after a scrollIntoView, before the browser has settled on a final scroll position).
+    tourPosition();
+  }
+
+  function tourStart() {
+    if (tourEls) return;
+    tourIndex = 0;
+    const overlay = document.createElement("div");
+    overlay.className = "tour-overlay";
+    const highlight = document.createElement("div");
+    highlight.className = "tour-highlight";
+    const tooltip = document.createElement("div");
+    tooltip.className = "tour-tooltip";
+    document.body.append(overlay, highlight, tooltip);
+    tourEls = { overlay, highlight, tooltip };
+    window.addEventListener("resize", tourPosition);
+    window.addEventListener("scroll", tourPosition, true);
+    tourShow();
+  }
+
+  function tourEnd() {
+    if (!tourEls) return;
+    tourEls.overlay.remove();
+    tourEls.highlight.remove();
+    tourEls.tooltip.remove();
+    tourEls = null;
+    window.removeEventListener("resize", tourPosition);
+    window.removeEventListener("scroll", tourPosition, true);
+    localStorage.setItem(TOUR_SEEN_KEY, "1");
+  }
+
+  btnShowTour.addEventListener("click", tourStart);
 
   // ---------- init ----------
   KEYS.forEach((k) => {
@@ -1034,6 +1202,9 @@
   refreshRackOptions();
   layout();
   log("info", "Simulator ready. Send a request or kill a rack to see how RF/CL determine availability.");
+  if (!localStorage.getItem(TOUR_SEEN_KEY)) {
+    setTimeout(tourStart, 500);
+  }
 })();
 </script>
 </body>
