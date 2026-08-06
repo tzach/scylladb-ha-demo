@@ -792,15 +792,17 @@
   }
 
   function animatePacket(rawX1, rawY1, rawX2, rawY2, opts) {
-    const { duration, fail, label, type } = opts;
-    // Pull both ends in from the node/client centers so the arrowhead lands just outside the
-    // destination shape instead of being buried under it.
-    const INSET = 30;
+    const { duration, fail, label, type, insetStart = 30, insetEnd = 30 } = opts;
+    // Pull each end in from its node/client center so the arrowhead lands just outside the
+    // destination shape instead of being buried under it. A client endpoint passes insetStart/
+    // insetEnd of 0 so the line actually starts/ends at the icon's true middle — the default
+    // 30px pull-in is sized for the much larger node/rack cards and would overshoot a 28px
+    // client icon (the two icons are only 36px apart center to center).
     const ddx = rawX2 - rawX1, ddy = rawY2 - rawY1;
     const len = Math.hypot(ddx, ddy) || 1;
     const ux = ddx / len, uy = ddy / len;
-    const x1 = rawX1 + ux * INSET, y1 = rawY1 + uy * INSET;
-    const x2 = rawX2 - ux * INSET, y2 = rawY2 - uy * INSET;
+    const x1 = rawX1 + ux * insetStart, y1 = rawY1 + uy * insetStart;
+    const x2 = rawX2 - ux * insetEnd, y2 = rawY2 - uy * insetEnd;
 
     // Bow the path out into a quadratic curve, perpendicular to the direct line, instead of a
     // straight segment — so a coordinator's several concurrent hops (full read + digest reads,
@@ -947,13 +949,13 @@
 
     log("info", `${client.id} → ${coordinator.id}: ${type.toUpperCase()} (${opLabel}) coordinator, natural replicas [${replicas.map((r) => r.id).join(", ")}] spanning ${distinctRacks}/${state.numRacks} racks @ CL=${state.cl} needs ${req}/${rf}${readNote}${coordNote}`);
 
-    await animatePacket(clientAnimX, client.animY, coordinator.x, coordinator.y, { duration: 260 * SLOWDOWN, fail: false, label: opLabel, type });
+    await animatePacket(clientAnimX, client.animY, coordinator.x, coordinator.y, { duration: 260 * SLOWDOWN, fail: false, label: opLabel, type, insetStart: 0 });
     if (stale()) return;
 
     if (knownReachable < req && !anyHintFallback) {
       log("fail", `${coordinator.id}: UNAVAILABLE — only ${knownReachable}/${rf} replicas reachable, need ${req}. Rejected before contacting replicas (fail-fast).`);
       log("fail", `${coordinator.id} → ${client.id}: NACK (${key})`);
-      await animatePacket(coordinator.x, coordinator.y, clientAnimX, client.animY, { duration: 220 * SLOWDOWN, fail: true, label: `NACK ${key}`, type });
+      await animatePacket(coordinator.x, coordinator.y, clientAnimX, client.animY, { duration: 220 * SLOWDOWN, fail: true, label: `NACK ${key}`, type, insetEnd: 0 });
       clearHighlight();
       return;
     }
@@ -1017,7 +1019,7 @@
     const readValue = primaryValue !== undefined ? primaryValue : Object.values(capturedValues)[0];
 
     const replyLabel = !success ? `NACK ${key}` : type === "write" ? `ACK ${key}=${value}` : `ACK ${key}=${fmtVal(readValue)}`;
-    await animatePacket(coordinator.x, coordinator.y, clientAnimX, client.animY, { duration: 260 * SLOWDOWN, fail: !success, label: replyLabel, type });
+    await animatePacket(coordinator.x, coordinator.y, clientAnimX, client.animY, { duration: 260 * SLOWDOWN, fail: !success, label: replyLabel, type, insetEnd: 0 });
     if (stale()) return;
 
     if (hinted) {
