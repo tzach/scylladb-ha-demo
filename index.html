@@ -445,6 +445,10 @@
   // The label above the buttons pushes their row below the card's true geometric center — this
   // offset re-centers a client's message lines on the button row itself, not the whole card.
   const CLIENT_ANIM_Y_OFFSET = CLIENT_PAD + CLIENT_LABEL_H + CLIENT_ROW_GAP + CLIENT_BTN_SIZE / 2 - CLIENT_CARD_H / 2;
+  // The write (pencil) and read (eye) buttons sit side by side with no slack in the row — its
+  // width is exactly 2 buttons + the gap — so each button's center is this far from the card's
+  // horizontal center, symmetric left/right.
+  const CLIENT_ICON_X_OFFSET = (CLIENT_BTN_SIZE + CLIENT_BTN_GAP) / 2;
 
   function fmtVal(v) { return v === undefined ? "∅" : v; }
 
@@ -637,7 +641,14 @@
     const firstCenterY = dims.racksTopY + dims.contentH / 2 - clientsStackH / 2 + CLIENT_CARD_H / 2;
     for (let i = 0; i < c; i++) {
       const y = firstCenterY + i * (CLIENT_CARD_H + CLIENT_STACK_GAP);
-      state.clients.push({ id: "C" + (i + 1), x: dims.clientX, y, animY: y + CLIENT_ANIM_Y_OFFSET });
+      state.clients.push({
+        id: "C" + (i + 1),
+        x: dims.clientX,
+        y,
+        animY: y + CLIENT_ANIM_Y_OFFSET,
+        writeX: dims.clientX - CLIENT_ICON_X_OFFSET,
+        readX: dims.clientX + CLIENT_ICON_X_OFFSET,
+      });
     }
     renderStatic();
   }
@@ -874,6 +885,9 @@
   async function sendRequest(type, client) {
     const myGen = state.gen;
     const stale = () => state.gen !== myGen;
+    // Message lines start from whichever icon was actually clicked — the pencil for a write,
+    // the eye for a read — rather than a neutral point between them.
+    const clientAnimX = type === "write" ? client.writeX : client.readX;
 
     const key = keySelect.value || KEYS[0];
     // Every write auto-increments that key's own counter (1, 2, 3, …) rather than reusing
@@ -933,13 +947,13 @@
 
     log("info", `${client.id} → ${coordinator.id}: ${type.toUpperCase()} (${opLabel}) coordinator, natural replicas [${replicas.map((r) => r.id).join(", ")}] spanning ${distinctRacks}/${state.numRacks} racks @ CL=${state.cl} needs ${req}/${rf}${readNote}${coordNote}`);
 
-    await animatePacket(client.x, client.animY, coordinator.x, coordinator.y, { duration: 260 * SLOWDOWN, fail: false, label: opLabel, type });
+    await animatePacket(clientAnimX, client.animY, coordinator.x, coordinator.y, { duration: 260 * SLOWDOWN, fail: false, label: opLabel, type });
     if (stale()) return;
 
     if (knownReachable < req && !anyHintFallback) {
       log("fail", `${coordinator.id}: UNAVAILABLE — only ${knownReachable}/${rf} replicas reachable, need ${req}. Rejected before contacting replicas (fail-fast).`);
       log("fail", `${coordinator.id} → ${client.id}: NACK (${key})`);
-      await animatePacket(coordinator.x, coordinator.y, client.x, client.animY, { duration: 220 * SLOWDOWN, fail: true, label: `NACK ${key}`, type });
+      await animatePacket(coordinator.x, coordinator.y, clientAnimX, client.animY, { duration: 220 * SLOWDOWN, fail: true, label: `NACK ${key}`, type });
       clearHighlight();
       return;
     }
@@ -1003,7 +1017,7 @@
     const readValue = primaryValue !== undefined ? primaryValue : Object.values(capturedValues)[0];
 
     const replyLabel = !success ? `NACK ${key}` : type === "write" ? `ACK ${key}=${value}` : `ACK ${key}=${fmtVal(readValue)}`;
-    await animatePacket(coordinator.x, coordinator.y, client.x, client.animY, { duration: 260 * SLOWDOWN, fail: !success, label: replyLabel, type });
+    await animatePacket(coordinator.x, coordinator.y, clientAnimX, client.animY, { duration: 260 * SLOWDOWN, fail: !success, label: replyLabel, type });
     if (stale()) return;
 
     if (hinted) {
